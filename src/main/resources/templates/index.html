@@ -1,17 +1,133 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>ESP32 Control</title>
+    <title>Smart Lamp Control Panel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+            background: #f0f2f5;
+            color: #333;
+        }
+        button, select {
+            font-size: 20px;
+            padding: 10px 30px;
+            margin: 20px 10px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #ddd;
+        }
+        select {
+            background-color: white;
+            border: 2px solid #ccc;
+            width: 220px;
+        }
+        .sensor {
+            font-size: 18px;
+            margin: 10px auto;
+            max-width: 350px;
+        }
+        .indicator {
+            width: 50px;
+            height: 50px;
+            display: inline-block;
+            border-radius: 50%;
+            margin-left: 10px;
+            vertical-align: middle;
+            border: 2px solid #999;
+        }
+        .lamp-status {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+        .btn-on {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .btn-off {
+            background-color: #f44336;
+            color: white;
+        }
+    </style>
 </head>
 <body>
-<h1>Control ESP32 via MQTT</h1>
+<h1>Smart Lamp Control Panel</h1>
 
-<form action="/send/on" method="get">
-    <button type="submit">Turn ON</button>
-</form>
+<!-- Relay Control -->
+<div>
+    <button class="btn-on" onclick="location.href='/send/on'">Turn ON</button>
+    <button class="btn-off" onclick="location.href='/send/off'">Turn OFF</button>
+</div>
 
-<form action="/send/off" method="get">
-    <button type="submit">Turn OFF</button>
-</form>
+<div class="lamp-status">
+    Lamp is: <span id="lampState">Loading...</span>
+    <div id="lampIndicator" class="indicator" style="background-color: gray;"></div>
+</div>
+
+<!-- Mode Switch -->
+<div>
+    <label for="mode">Select Mode:</label>
+    <select id="mode" onchange="changeMode()">
+        <option value="1">Mode 1 - Manual</option>
+        <option value="2">Mode 2 - Manual + Clap</option>
+        <option value="3">Mode 3 - Manual + Motion & Light</option>
+    </select>
+</div>
+
+<!-- Sensors Info -->
+<div class="sensor">
+    <p>Photoresistor: <span id="photoValue">--</span></p>
+    <div id="photoIndicator" class="indicator" style="background-color: gray;"></div>
+</div>
+<div class="sensor">
+    <p>PIR Sensor: <span id="pirStatus">--</span></p>
+</div>
+
+<script>
+    function changeMode() {
+        const mode = document.getElementById("mode").value;
+        fetch("/send/mode/" + mode);
+    }
+
+    function fetchSensorData() {
+        fetch("/data")
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("photoValue").innerText = data.photo;
+                document.getElementById("pirStatus").innerText = data.pir;
+
+                // Photo indicator color logic
+                let color;
+                const photoVal = parseInt(data.photo);
+                if (!isNaN(photoVal)) {
+                    if (photoVal < 1000) color = 'green';
+                    else if (photoVal < 2000) color = 'orange';
+                    else color = 'red';
+                } else {
+                    color = 'gray';
+                }
+                document.getElementById("photoIndicator").style.backgroundColor = color;
+
+                // Lamp state and indicator
+                const lampState = data.lamp;
+                document.getElementById("lampState").innerText = lampState;
+                if (lampState === 'ON') {
+                    document.getElementById("lampIndicator").style.backgroundColor = 'yellow';
+                } else if (lampState === 'OFF') {
+                    document.getElementById("lampIndicator").style.backgroundColor = 'gray';
+                } else {
+                    document.getElementById("lampIndicator").style.backgroundColor = 'gray';
+                }
+            });
+    }
+
+    setInterval(fetchSensorData, 2000);
+</script>
 </body>
 </html>
