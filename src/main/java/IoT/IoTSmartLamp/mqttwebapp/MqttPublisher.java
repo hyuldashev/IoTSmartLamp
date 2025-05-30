@@ -6,11 +6,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class MqttPublisher {
 
-    private static final String BROKER = "tcp://34.88.101.222:1883";
-
-    // Topics
-    private static final String TOPIC_RELAY = "ttpu/iot";
-    private static final String TOPIC_MODE = "ttpu/mode";
+    private static final String BROKER = "tcp://broker.hivemq.com:1883";
+    private static final String TOPIC = "esp32/control"; // ESP32 should subscribe to this topic
 
     private MqttClient client;
 
@@ -23,24 +20,16 @@ public class MqttPublisher {
             client.connect(options);
         } catch (MqttException e) {
             e.printStackTrace();
-            System.out.println("some changes");
         }
     }
 
-    public void sendRelayCommand(String payload) {
-        sendMessage(TOPIC_RELAY, payload);
-    }
-
-    public void sendModeCommand(String payload) {
-        sendMessage(TOPIC_MODE, payload);
-    }
-
-    private void sendMessage(String topic, String payload) {
+    public void sendMessage(String payload) {
         try {
+            System.out.println("some text   " );
             if (client.isConnected()) {
                 MqttMessage message = new MqttMessage(payload.getBytes());
-                client.publish(topic, message);
-                System.out.println("Sent to " + topic + ": " + payload);
+                client.publish(TOPIC, message);
+                System.out.println("Sent: " + payload);
             }
         } catch (MqttException e) {
             e.printStackTrace();
